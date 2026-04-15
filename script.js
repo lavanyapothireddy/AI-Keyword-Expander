@@ -1,4 +1,3 @@
-// Replace this with your actual Render URL
 const API_URL = "https://ai-keyword-expander.onrender.com/expand";
 
 async function expandKeyword() {
@@ -7,19 +6,20 @@ async function expandKeyword() {
     const keyword = keywordInput.value.trim();
 
     if (!keyword) {
-        alert("Please enter a keyword first!");
+        alert("Please enter a word!");
         return;
     }
 
-    // Show loading state
+    // 1. Show Loading UI
     resultDiv.innerHTML = `
         <div class="loading">
-            <p>🤖 AI is thinking...</p>
-            <small>(The first search might take 30-60 seconds to wake up the AI model)</small>
+            <p>🤖 AI is loading the model...</p>
+            <small>This takes about 40 seconds on the first search.</small>
         </div>
     `;
 
     try {
+        // 2. Send request to Render
         const response = await fetch(API_URL, {
             method: "POST",
             headers: {
@@ -29,14 +29,14 @@ async function expandKeyword() {
         });
 
         if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
+            throw new Error("Server is still waking up...");
         }
 
         const data = await response.json();
 
-        // Clear and display results
+        // 3. Display Results
         if (data.keywords && data.keywords.length > 0) {
-            resultDiv.innerHTML = `<h3>Suggestions for "${data.keyword}":</h3>`;
+            resultDiv.innerHTML = `<h3>Results for "${data.keyword}":</h3>`;
             const list = document.createElement('div');
             list.className = "keyword-list";
 
@@ -49,14 +49,14 @@ async function expandKeyword() {
 
             resultDiv.appendChild(list);
         } else {
-            resultDiv.innerHTML = "<p>No synonyms found. Try another word!</p>";
+            resultDiv.innerHTML = "<p>No common synonyms found. Try another word!</p>";
         }
 
     } catch (error) {
-        console.error("Fetch Error:", error);
+        console.error("Error:", error);
         resultDiv.innerHTML = `
-            <p style="color: red;">❌ Error connecting to backend.</p>
-            <p><small>Check if the Render URL is correct and try again in 1 minute.</small></p>
+            <p style="color: #d32f2f;">❌ Connection failed.</p>
+            <p><small>The AI is still loading. Please wait 30 seconds and click 'Expand' again.</small></p>
         `;
     }
 }
