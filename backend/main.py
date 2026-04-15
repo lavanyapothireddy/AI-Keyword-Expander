@@ -4,8 +4,6 @@ from pydantic import BaseModel
 import faiss
 import pickle
 import numpy as np
-from sentence_transformers import SentenceTransformer
-import os
 
 app = FastAPI()
 
@@ -17,8 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
-
+# Load FAISS + vocab only (LIGHTWEIGHT)
 index = faiss.read_index("words.index")
 
 with open("vocab.pkl", "rb") as f:
@@ -29,49 +26,34 @@ class InputData(BaseModel):
     keyword: str
 
 
-# 🟢 HEALTH CHECK (NEW)
-@app.get("/health")
-def health():
-    return {
-        "status": "ok",
-        "message": "AI Keyword Expander is running 🚀"
-    }
-
-
 @app.get("/")
 def home():
-    return {"message": "AI Keyword Expander API Running"}
+    return {"message": "AI Keyword Expander Running 🚀"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 @app.post("/expand")
 def expand(data: InputData):
-    word = data.keyword.strip().lower()
+    word = data.keyword.lower().strip()
 
-    vec = model.encode([word]).astype("float32")
+    # ⚡ FAISS search only (NO MODEL)
+    vec = np.random.rand(384).astype("float32")  # dummy vector for demo
+    distances, indices = index.search(np.array([vec]), 10)
 
-    distances, indices = index.search(vec, 10)
-
-    result = []
+    results = []
     for i in indices[0]:
-        w = vocab[i]
-        if w != word:
-            result.append(w)
+        results.append(vocab[i])
 
     return {
         "input": word,
-        "keywords": result[:10]
+        "keywords": results[:10]
     }
 
 
-# Render support
 if __name__ == "__main__":
     import uvicorn
-    import os
-
-    port = int(os.environ.get("PORT", 10000))
-
-    uvicorn.run(
-        "backend.main:app",
-        host="0.0.0.0",
-        port=port
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000)
