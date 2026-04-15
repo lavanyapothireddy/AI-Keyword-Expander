@@ -1,16 +1,17 @@
-async function expand() {
-    let keyword = document.getElementById("keyword").value;
+async function expandKeywords() {
+    const input = document.getElementById("keywordInput");
+    const resultList = document.getElementById("resultList");
+    const keyword = input.value.trim();
 
     if (!keyword) {
-        alert("Please enter a keyword");
+        alert("Please enter a word!");
         return;
     }
 
-    let list = document.getElementById("result");
-    list.innerHTML = "<li>⏳ Processing...</li>";
+    resultList.innerHTML = "<li>🔍 Finding keywords...</li>";
 
     try {
-        let res = await fetch("https://ai-keyword-expander.onrender.com/expand", {
+        const response = await fetch("http://127.0.0.1:8000/expand", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -18,22 +19,25 @@ async function expand() {
             body: JSON.stringify({ keyword: keyword })
         });
 
-        let data = await res.json();
-
-        list.innerHTML = "";
-
-        if (!data.keywords || data.keywords.length === 0) {
-            list.innerHTML = "<li>No keywords found</li>";
-            return;
+        if (!response.ok) {
+            throw new Error("Server error or Method Not Allowed");
         }
 
-        data.keywords.forEach(k => {
-            let li = document.createElement("li");
-            li.innerText = k;
-            list.appendChild(li);
-        });
+        const data = await response.json();
+        resultList.innerHTML = ""; // Clear loading text
+
+        if (data.keywords.length === 0) {
+            resultList.innerHTML = "<li>No results found.</li>";
+        } else {
+            data.keywords.forEach(word => {
+                const li = document.createElement("li");
+                li.textContent = word;
+                resultList.appendChild(li);
+            });
+        }
 
     } catch (error) {
-        list.innerHTML = "<li>❌ Error connecting to server</li>";
+        console.error("Error:", error);
+        resultList.innerHTML = "<li style='color:red;'>❌ Error connecting to backend. Make sure main.py is running!</li>";
     }
 }
