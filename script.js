@@ -1,5 +1,6 @@
 async function expand() {
-    let keyword = document.getElementById("keyword").value.trim();
+    let keywordInput = document.getElementById("keyword");
+    let keyword = keywordInput.value.trim();
 
     if (!keyword) {
         alert("Please enter a keyword");
@@ -7,9 +8,10 @@ async function expand() {
     }
 
     let list = document.getElementById("result");
-    list.innerHTML = "<li>⏳ Processing...</li>";
+    list.innerHTML = "<li>⏳ Thinking...</li>";
 
     try {
+        // Change this URL if your Render name changes!
         let res = await fetch("https://ai-keyword-expander.onrender.com/expand", {
             method: "POST",
             headers: {
@@ -19,11 +21,10 @@ async function expand() {
         });
 
         if (!res.ok) {
-            throw new Error("Server error: " + res.status);
+            throw new Error(`Server responded with ${res.status}`);
         }
 
         let data = await res.json();
-
         list.innerHTML = "";
 
         if (!data.keywords || data.keywords.length === 0) {
@@ -38,7 +39,7 @@ async function expand() {
         });
 
     } catch (error) {
-        console.error(error);
-        list.innerHTML = "<li>❌ Error connecting to server</li>";
+        console.error("Fetch Error:", error);
+        list.innerHTML = "<li>❌ Connection Error. Is the backend awake?</li>";
     }
 }
