@@ -4,18 +4,13 @@
     <title>AI Keyword Expander</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-
-    <h1>🔍 AI Keyword Expander</h1>
-
     <div class="container">
-        <input type="text" id="keyword" placeholder="Enter keyword...">
-        <button onclick="expand()">Expand</button>
+        <h1>AI Keyword Expander</h1>
+        <input type="text" id="keywordInput" placeholder="Enter a keyword (e.g. fast)">
+        <button onclick="expandKeywords()">Expand</button>
+        <ul id="resultList"></ul>
     </div>
-
-    <ul id="result"></ul>
-
     <script src="script.js"></script>
 </body>
 </html>
