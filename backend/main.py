@@ -39,7 +39,9 @@ def load_data():
 class InputData(BaseModel):
     keyword: str
 
-
+@app.get("/")
+def home():
+    return {"message": "AI Keyword Expander Running 🚀"}
 @app.get("/health")
 def health():
     return {
