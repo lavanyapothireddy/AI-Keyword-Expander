@@ -1,95 +1,65 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
 from pydantic import BaseModel
-from sentence_transformers import SentenceTransformer
-import faiss
-import pickle
-import numpy as np
-import os
+from fastapi.middleware.cors import CORSMiddleware
+from sentence_transformers import SentenceTransformer, util
 
 app = FastAPI()
 
-# --- CORS SETUP ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-class RequestBody(BaseModel):
+# Load model
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+class Request(BaseModel):
     keyword: str
 
-# Global variables (initially empty to save RAM)
-index = None
-vocab = None
-model = None
 
-def get_ai_resources():
-    """Loads the AI components only when the first request arrives."""
-    global index, vocab, model
-    
-    if model is None:
-        print("🤖 Loading AI Model (Lazy Load)...")
-        # Using a very small, efficient model to stay under 512MB
-        model = SentenceTransformer("all-MiniLM-L6-v2")
-    
-    if index is None or vocab is None:
-        print("📥 Loading Index and Vocab...")
-        try:
-            # Important: Use absolute paths if files are in the same folder
-            base_path = os.path.dirname(__file__)
-            index_path = os.path.join(base_path, "words.index")
-            vocab_path = os.path.join(base_path, "vocab.pkl")
+# 🔥 LOAD WORD LIST FROM FILE
+def load_vocab():
+    with open("backend/words.txt", "r", encoding="utf-8") as f:
+        words = [w.strip().lower() for w in f.readlines() if w.strip()]
+    return list(set(words))
 
-            if os.path.exists(index_path) and os.path.exists(vocab_path):
-                index = faiss.read_index(index_path)
-                with open(vocab_path, "rb") as f:
-                    vocab = pickle.load(f)
-                print("✅ AI Resources Loaded successfully")
-            else:
-                print(f"❌ Missing files at: {base_path}")
-        except Exception as e:
-            print(f"❌ Error loading files: {e}")
 
-@app.get("/")
-def home():
-    return {"message": "AI Keyword Expander is Ready"}
+VOCAB = load_vocab()
 
-@app.get("/health")
-def health():
-    return {"status": "healthy", "port": os.environ.get("PORT", 8000)}
+# Precompute embeddings (important for speed)
+VOCAB_EMB = model.encode(VOCAB, convert_to_tensor=True)
+
 
 @app.post("/expand")
-def expand(req: RequestBody):
-    global index, vocab, model
-    
-    # Trigger lazy load if not already loaded
-    get_ai_resources()
-    
+def expand(req: Request):
     word = req.keyword.lower().strip()
-    
-    if not index or not model or not vocab:
-        raise HTTPException(status_code=500, detail="AI Index could not be loaded on the server.")
 
-    # AI Search Logic
-    query_vector = model.encode([word]).astype("float32")
-    distances, indices = index.search(query_vector, 12)
-    
+    if not word:
+        return {"error": "Empty input"}
+
+    # Encode input
+    word_emb = model.encode(word, convert_to_tensor=True)
+
+    # Similarity
+    scores = util.cos_sim(word_emb, VOCAB_EMB)[0]
+
+    # Sort results
+    top_results = scores.argsort(descending=True)
+
     results = []
-    for i in indices[0]:
-        if i != -1 and i < len(vocab):
-            res_word = vocab[i]
-            if res_word != word:
-                results.append(res_word)
-    
-    return {
-        "keyword": word, 
-        "keywords": list(dict.fromkeys(results))[:8] 
-    }
+    for idx in top_results:
+        candidate = VOCAB[int(idx)]
 
-if __name__ == "__main__":
-    # Render requires binding to 0.0.0.0 and the assigned $PORT
-    port = int(os.environ.get("PORT", 8000))
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=port)
+        if candidate != word and candidate not in results:
+            results.append(candidate)
+
+        if len(results) == 8:
+            break
+
+    return {
+        "keyword": word,
+        "keywords": results
+    }
