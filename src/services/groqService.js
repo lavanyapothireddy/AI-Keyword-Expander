@@ -65,34 +65,31 @@ Return ONLY a flat JSON array like:
   return parseJsonArray(raw)
 }
 
-// ── 2. Word type & usage classification ─────────────────────────────────────
+// ── 2. SEO intent classification ─────────────────────────────────────────────
 export async function classifyIntent(keywords) {
-  const system = `You are a linguistic classifier. For each keyword, identify its word type and usage context. Respond ONLY with a valid JSON array of objects. No markdown, no extra text.`
-  const user = `Classify each of these keywords:
+  const system = `You are an SEO intent classifier. Classify each keyword into one of: Informational, Navigational, Commercial, or Transactional. Respond ONLY with a valid JSON array of objects. No markdown, no extra text.`
+
+  const user = `Classify the search intent for these keywords:
 ${keywords.join('\n')}
 
-For each keyword identify:
-- type: one of "Synonym", "Related Word", "Variation", "Broader Term", "Narrower Term"
-- partOfSpeech: one of "Noun", "Verb", "Adjective", "Adverb", "Phrase"
-- reason: one short sentence explaining the relationship to the original seed
-
 Return ONLY a JSON array like:
-[{"keyword": "swift", "type": "Synonym", "partOfSpeech": "Adjective", "reason": "Direct synonym meaning fast"}]`
+[{"keyword": "...", "intent": "Informational", "reason": "short reason"}]`
 
   const raw = await callGroq(system, user)
   return parseJsonArray(raw)
 }
 
-// ── 3. Keyword clustering by semantic group ──────────────────────────────────
+// ── 3. Keyword clustering by topic ───────────────────────────────────────────
 export async function clusterKeywords(keywords) {
-  const system = `You are a linguistic expert who groups words into semantic clusters by meaning and usage. Respond ONLY with valid JSON. No markdown, no extra text.`
-  const user = `Group these keywords into semantic clusters based on meaning similarity:
+  const system = `You are an SEO specialist who groups keywords into topical clusters. Respond ONLY with valid JSON. No markdown, no extra text.`
+
+  const user = `Group these keywords into topical clusters:
 ${keywords.join('\n')}
 
 Return ONLY a JSON object like:
 {
-  "Cluster Name": ["word1", "word2"],
-  "Another Cluster": ["word3"]
+  "Cluster Name": ["keyword1", "keyword2"],
+  "Another Cluster": ["keyword3"]
 }`
 
   const raw = await callGroq(system, user)
