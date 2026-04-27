@@ -1,6 +1,4 @@
 // src/services/groqService.js
-// Calls Groq API using fetch directly (browser-compatible)
-
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const MODEL = 'llama-3.3-70b-versatile'
 
@@ -40,26 +38,26 @@ async function callGroq(systemPrompt, userPrompt) {
   return data.choices[0].message.content.trim()
 }
 
-// ── 1. Expand keywords into synonyms, related words & variants ───────────────
+// ── 1. Expand keywords with POS tag ─────────────────────────────────────────
 export async function expandKeywords(seedKeywords, count = 10) {
-  const system = `You are a linguistic and semantic keyword expansion expert. When given seed words, you generate synonyms, related words, word variations, and semantically similar terms. Always respond ONLY with a valid JSON array of strings. No explanations, no markdown, no extra text.`
+  const system = `You are a linguistic and semantic keyword expansion expert. When given seed words, you generate synonyms and related words along with their part of speech. Always respond ONLY with a valid JSON array of objects. No explanations, no markdown, no extra text.`
 
   const user = `Expand these seed keywords: ${seedKeywords.join(', ')}
 
-Generate ${count} expanded keywords per seed word that include:
-1. Direct synonyms (same/similar meaning words)
-2. Related words (semantically connected terms)
-3. Word form variations (noun, verb, adjective, adverb forms)
-4. Broader terms (hypernyms) and narrower terms (hyponyms)
-5. Contextual or domain-specific alternatives
+Generate ${count} expanded keywords per seed word. For each word provide:
+- "word": the synonym or related word (single word or short 2-3 word phrase)
+- "pos": part of speech — exactly one of: "Noun", "Verb", "Adjective", "Adverb", "Phrase"
+- "type": relationship type — exactly one of: "Synonym", "Related", "Variation", "Broader", "Narrower"
 
-Rules:
-- Each entry must be a single word or a short 2-3 word phrase
-- NO full sentences, NO questions, NO long phrases
-- Keep entries concise and relevant
+Include a mix of synonyms, related words, word form variations, broader and narrower terms.
+NO full sentences. Keep words concise and relevant.
 
 Return ONLY a flat JSON array like:
-["swift", "rapid", "velocity", "acceleration", "fast-paced", "brisk", "nimble"]`
+[
+  {"word": "swift", "pos": "Adjective", "type": "Synonym"},
+  {"word": "velocity", "pos": "Noun", "type": "Related"},
+  {"word": "accelerate", "pos": "Verb", "type": "Variation"}
+]`
 
   const raw = await callGroq(system, user)
   return parseJsonArray(raw)
@@ -70,7 +68,7 @@ export async function classifyIntent(keywords) {
   const system = `You are an SEO intent classifier. Classify each keyword into one of: Informational, Navigational, Commercial, or Transactional. Respond ONLY with a valid JSON array of objects. No markdown, no extra text.`
 
   const user = `Classify the search intent for these keywords:
-${keywords.join('\n')}
+${keywords.map(k => k.word || k).join('\n')}
 
 Return ONLY a JSON array like:
 [{"keyword": "...", "intent": "Informational", "reason": "short reason"}]`
@@ -79,12 +77,12 @@ Return ONLY a JSON array like:
   return parseJsonArray(raw)
 }
 
-// ── 3. Keyword clustering by topic ───────────────────────────────────────────
+// ── 3. Keyword clustering ─────────────────────────────────────────────────────
 export async function clusterKeywords(keywords) {
   const system = `You are an SEO specialist who groups keywords into topical clusters. Respond ONLY with valid JSON. No markdown, no extra text.`
 
   const user = `Group these keywords into topical clusters:
-${keywords.join('\n')}
+${keywords.map(k => k.word || k).join('\n')}
 
 Return ONLY a JSON object like:
 {
@@ -96,7 +94,7 @@ Return ONLY a JSON object like:
   return parseJsonObject(raw)
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function parseJsonArray(raw) {
   const cleaned = raw.replace(/```json|```/g, '').trim()
   const match = cleaned.match(/\[[\s\S]*\]/)
