@@ -8,11 +8,27 @@ import {
 import { exportToCSV, exportToJSON } from './utils/exportUtils'
 import './App.css'
 
+const POS_COLORS = {
+  Noun:      { bg: '#1e3a5f', text: '#60a5fa' },
+  Verb:      { bg: '#1a3d2e', text: '#34d399' },
+  Adjective: { bg: '#3b1f5e', text: '#c084fc' },
+  Adverb:    { bg: '#3d2a10', text: '#fbbf24' },
+  Phrase:    { bg: '#1f3040', text: '#38bdf8' },
+}
+
+const TYPE_COLORS = {
+  Synonym:   '#22d3a5',
+  Related:   '#7c6aff',
+  Variation: '#fbbf24',
+  Broader:   '#f97316',
+  Narrower:  '#f472b6',
+}
+
 const INTENT_COLORS = {
-  Informational:  '#22d3a5',
-  Navigational:   '#7c6aff',
-  Commercial:     '#f97316',
-  Transactional:  '#f472b6',
+  Informational: '#22d3a5',
+  Navigational:  '#7c6aff',
+  Commercial:    '#f97316',
+  Transactional: '#f472b6',
 }
 
 const CLUSTER_PALETTE = [
@@ -23,7 +39,7 @@ const CLUSTER_PALETTE = [
 export default function App() {
   const [seedInput, setSeedInput]       = useState('')
   const [expandCount, setExpandCount]   = useState(10)
-  const [keywords, setKeywords]         = useState([])
+  const [keywords, setKeywords]         = useState([])   // array of {word, pos, type}
   const [intentData, setIntentData]     = useState([])
   const [clusters, setClusters]         = useState({})
   const [loading, setLoading]           = useState({ expand: false, intent: false, cluster: false })
@@ -75,6 +91,13 @@ export default function App() {
   const intentMap = {}
   intentData.forEach(item => { intentMap[item.keyword] = item })
   const clusterNames = Object.keys(clusters)
+
+  // POS filter state
+  const [posFilter, setPosFilter] = useState('All')
+  const allPos = ['All', 'Noun', 'Verb', 'Adjective', 'Adverb', 'Phrase']
+  const filteredKeywords = posFilter === 'All'
+    ? keywords
+    : keywords.filter(k => k.pos === posFilter)
 
   return (
     <div className="app">
@@ -160,7 +183,7 @@ export default function App() {
           </section>
         )}
 
-        {/* ── Results Tabs ── */}
+        {/* ── Results ── */}
         {keywords.length > 0 && (
           <section className="results-panel">
             <div className="tabs">
@@ -181,14 +204,70 @@ export default function App() {
 
             {/* ── Keywords Tab ── */}
             {activeTab === 'keywords' && (
-              <div className="kw-grid">
-                {keywords.map((kw, i) => (
-                  <div key={i} className="kw-chip">
-                    <span className="kw-num">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="kw-text">{kw}</span>
-                    <button className="copy-btn" title="Copy" onClick={() => navigator.clipboard.writeText(kw)}>⎘</button>
+              <div>
+                {/* POS filter pills */}
+                <div className="pos-filter-bar">
+                  {allPos.map(pos => (
+                    <button
+                      key={pos}
+                      className={`pos-filter-btn ${posFilter === pos ? 'active' : ''}`}
+                      style={pos !== 'All' && posFilter === pos ? {
+                        background: POS_COLORS[pos]?.bg,
+                        color: POS_COLORS[pos]?.text,
+                        borderColor: POS_COLORS[pos]?.text,
+                      } : {}}
+                      onClick={() => setPosFilter(pos)}
+                    >
+                      {pos}
+                      {pos !== 'All' && (
+                        <span className="pos-filter-count">
+                          {keywords.filter(k => k.pos === pos).length}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Keyword chips with POS badge */}
+                <div className="kw-grid">
+                  {filteredKeywords.map((kw, i) => {
+                    const posStyle = POS_COLORS[kw.pos] || { bg: '#1a1a2e', text: '#9090a8' }
+                    const typeColor = TYPE_COLORS[kw.type] || '#9090a8'
+                    return (
+                      <div key={i} className="kw-chip-rich">
+                        <div className="kw-chip-top">
+                          <span className="kw-num">{String(i + 1).padStart(2, '0')}</span>
+                          <span className="kw-word">{kw.word}</span>
+                          <button
+                            className="copy-btn"
+                            title="Copy"
+                            onClick={() => navigator.clipboard.writeText(kw.word)}
+                          >⎘</button>
+                        </div>
+                        <div className="kw-chip-bottom">
+                          <span
+                            className="pos-tag"
+                            style={{ background: posStyle.bg, color: posStyle.text }}
+                          >
+                            {kw.pos}
+                          </span>
+                          <span
+                            className="type-tag"
+                            style={{ color: typeColor }}
+                          >
+                            {kw.type}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {filteredKeywords.length === 0 && (
+                  <div className="empty-state">
+                    <p>No keywords found for <strong>{posFilter}</strong>.</p>
                   </div>
-                ))}
+                )}
               </div>
             )}
 
