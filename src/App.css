@@ -472,3 +472,79 @@
 .intent-row {
   grid-template-columns: 120px 1fr 100px auto !important;
 }
+
+/* ── POS Filter Bar ─────────────────────────────────────── */
+.pos-filter-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 16px 24px 0;
+}
+.pos-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pos-filter-btn:hover { border-color: var(--border2); color: var(--text); }
+.pos-filter-btn.active { border-color: var(--accent); color: var(--accent2); background: var(--accent-glow); }
+.pos-filter-count {
+  font-size: 10px;
+  background: var(--border);
+  color: var(--text3);
+  padding: 1px 5px;
+  border-radius: 10px;
+}
+
+/* ── Rich Keyword Chip ──────────────────────────────────── */
+.kw-chip-rich {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s;
+}
+.kw-chip-rich:hover { border-color: var(--border2); }
+
+.kw-chip-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kw-word {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+}
+.kw-chip-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pos-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.type-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  opacity: 0.75;
+}
