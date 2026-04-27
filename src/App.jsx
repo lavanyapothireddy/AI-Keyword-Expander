@@ -136,7 +136,7 @@ export default function App() {
               <h2>Keyword Universe</h2>
               <p className="panel-sub">Drop a word. Watch it grow into synonyms, variants &amp; semantic relatives.</p>
             </div>
-            <span className="tag">Step 1</span>
+
           </div>
           <textarea
             className="seed-input"
